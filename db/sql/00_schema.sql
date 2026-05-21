@@ -1,0 +1,4 @@
+CREATE DATABASE IF NOT EXISTS flz_agent
+  DEFAULT CHARACTER SET utf8mb4
+  DEFAULT COLLATE utf8mb4_general_ci;
+USE flz_agent;

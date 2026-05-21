@@ -1,0 +1,25 @@
+CREATE TABLE IF NOT EXISTS `chat_history` (
+  `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '物理主键',
+  `agent_id`         VARCHAR(64)  NOT NULL COMMENT '业务索引id(agent 实例 id)',
+  `session_id`       VARCHAR(64)  NOT NULL COMMENT '会话 id',
+  `user_id`          BIGINT UNSIGNED NOT NULL,
+  `agent_name`       VARCHAR(64)  NOT NULL,
+  `agent_type`       VARCHAR(32)  NOT NULL DEFAULT 'chat',
+  `agent_version`    VARCHAR(32)  NOT NULL DEFAULT '1.0',
+  `agent_status`     TINYINT      NOT NULL DEFAULT 1,
+  `role`             VARCHAR(16)  NOT NULL COMMENT 'user/assistant/system/tool',
+  `content`          MEDIUMTEXT   NOT NULL,
+  `tool_name`        VARCHAR(64)  DEFAULT NULL,
+  `tool_args_json`   TEXT         DEFAULT NULL,
+  `tool_result_json` MEDIUMTEXT   DEFAULT NULL,
+  `token_prompt`     INT          NOT NULL DEFAULT 0,
+  `token_completion` INT          NOT NULL DEFAULT 0,
+  `ext_json`         TEXT         DEFAULT NULL,
+  `agent_created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `agent_updated_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                            ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_session_created` (`session_id`, `agent_created_at`),
+  KEY `idx_agent_id`        (`agent_id`),
+  KEY `idx_user_session`    (`user_id`, `session_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
