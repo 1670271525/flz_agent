@@ -1,7 +1,9 @@
 #include "agent/http/sse_servlet.h"
 
 #include "agent/auth/auth_filter.h"
+#include "agent/config/agent_config.h"
 #include "agent/config/mysql_config.h"
+#include "agent/dao/agent_session_dao.h"
 #include "agent/dao/chat_history_dao.h"
 #include "agent/http/error_response.h"
 #include "agent/http/sse_writer.h"
@@ -10,6 +12,9 @@
 #include "agent/util/uuid.h"
 #include "agent/workflow/workflow_context.h"
 #include "agent/workflow/workflow_dispatcher.h"
+
+#include <algorithm>
+#include <vector>
 
 namespace agent {
 
@@ -44,7 +49,7 @@ int32_t SseServlet::handle(flz::http::HttpRequest::ptr request,
     }
 
     const std::string session_id = body.get("session_id", "").asString();
-    const std::string msg = body.get("msg", "").asString();
+    std::string msg = body.get("msg", "").asString();
     const std::string agent_type = body.get("agent_type", "chat").asString();
     if (session_id.empty() || msg.empty()) {
         SseWriter writer(session);
@@ -59,6 +64,12 @@ int32_t SseServlet::handle(flz::http::HttpRequest::ptr request,
     SseWriter writer(session);
     ChatSession::ptr chat_session(new ChatSession(session_id, auth_ctx->userId));
     ChatHistoryDao::ptr chat_dao(new ChatHistoryDao(MysqlConfig::defaultDb()));
+    AgentConfigData agent_cfg = AgentConfig::get();
+
+    if (agent_cfg.context.maxMessageChars > 0
+        && static_cast<int>(msg.size()) > agent_cfg.context.maxMessageChars) {
+        msg = msg.substr(0, static_cast<size_t>(agent_cfg.context.maxMessageChars));
+    }
 
     WorkflowContext ctx;
     ctx.auth = auth_ctx;
@@ -69,6 +80,23 @@ int32_t SseServlet::handle(flz::http::HttpRequest::ptr request,
     ctx.userMessage = msg;
     ctx.agentId = Uuid::generate("agent");
 
+    AgentSessionDao::ptr session_dao(new AgentSessionDao(MysqlConfig::defaultDb()));
+    if (!session_dao->ensureSession(auth_ctx->userId, session_id, ctx.agentId, agent_type)) {
+        ErrorResponse::writeSse(writer, 500, "session persist failed");
+        writer.close();
+        response->setStatus(static_cast<flz::http::HttpStatus>(0));
+        response->setBody("");
+        response->setClose(true);
+        return 0;
+    }
+
+    std::vector<ChatMessagePo> history;
+    const int history_limit = std::max(2, agent_cfg.context.maxRounds * 2);
+    if (chat_dao->listRecent(auth_ctx->userId, session_id, history_limit, history)) {
+        ctx.sessionContext.reset(history);
+        ctx.sessionContext.trimByRounds(agent_cfg.context.maxRounds);
+    }
+
     IWorkflow::ptr workflow = WorkflowDispatcher::GetInstance()->find(agent_type);
     if (!workflow) {
         ErrorResponse::writeSse(writer, 500, "workflow not found");
@@ -76,10 +104,10 @@ int32_t SseServlet::handle(flz::http::HttpRequest::ptr request,
         ErrorResponse::writeSse(writer, 500, "workflow failed");
     } else {
         Json::Value done;
-        done["finish_reason"] = "stop";
-        done["usage"]["prompt_tokens"] = 0;
-        done["usage"]["completion_tokens"] = 0;
-        done["usage"]["total_tokens"] = 0;
+        done["finish_reason"] = ctx.finishReason.empty() ? "stop" : ctx.finishReason;
+        done["usage"]["prompt_tokens"] = ctx.promptTokens;
+        done["usage"]["completion_tokens"] = ctx.completionTokens;
+        done["usage"]["total_tokens"] = ctx.totalTokens;
         writer.sendEvent("done", JsonHelper::toString(done));
     }
 

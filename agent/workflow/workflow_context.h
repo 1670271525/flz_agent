@@ -27,6 +27,11 @@ public:
     std::string agentType = "chat";
     std::string userMessage;
     std::string agentId;
+    std::string finishReason = "stop";
+    std::string finalAnswer;
+    int promptTokens = 0;
+    int completionTokens = 0;
+    int totalTokens = 0;
 };
 
 } // namespace agent

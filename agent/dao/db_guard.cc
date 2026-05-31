@@ -1,5 +1,6 @@
 #include "agent/dao/db_guard.h"
 
+#include "agent/config/mysql_config.h"
 #include "include/log.h"
 
 namespace agent {
@@ -12,6 +13,22 @@ DbGuard::DbGuard(const std::string& db_name) {
         FLZ_LOG_ERROR(g_logger) << "DbGuard get mysql fail, db=" << db_name;
     } else if (!m_db->ping()) {
         FLZ_LOG_WARN(g_logger) << "DbGuard ping mysql fail, db=" << db_name;
+    } else {
+        std::string charset = "utf8mb4";
+        std::map<std::string, std::map<std::string, std::string> > dbs = MysqlConfig::getDbs();
+        std::map<std::string, std::map<std::string, std::string> >::const_iterator it = dbs.find(db_name);
+        if (it != dbs.end()) {
+            std::map<std::string, std::string>::const_iterator charset_it = it->second.find("charset");
+            if (charset_it != it->second.end() && !charset_it->second.empty()) {
+                charset = charset_it->second;
+            }
+        }
+        const std::string set_names_sql = "SET NAMES " + charset;
+        if (m_db->execute(set_names_sql) != 0) {
+            FLZ_LOG_WARN(g_logger) << "DbGuard set names fail, db=" << db_name
+                                   << " sql=" << set_names_sql
+                                   << " err=" << m_db->getErrStr();
+        }
     }
 }
 

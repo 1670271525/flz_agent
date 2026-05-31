@@ -24,6 +24,7 @@ public:
 
     void reloadFromConfig();
     std::vector<McpToolDescriptor> listTools() const;
+    bool findTool(const std::string& tool_name, McpToolDescriptor& out) const;
     std::string dumpToolsAsJson() const;
 
 private:

@@ -22,7 +22,8 @@ bool ChatHistoryDao::listRecent(uint64_t user_id, const std::string& session_id,
 
     flz::IStmt::ptr stmt = guard.db()->prepare(
         "SELECT id, agent_id, session_id, user_id, agent_name, agent_type, agent_version, "
-        "agent_status, role, content, token_prompt, token_completion, ext_json "
+        "agent_status, role, content, tool_name, tool_args_json, tool_result_json, "
+        "token_prompt, token_completion, ext_json "
         "FROM chat_history WHERE user_id = ? AND session_id = ? "
         "ORDER BY id DESC LIMIT ?");
     if (!stmt) {
@@ -50,9 +51,12 @@ bool ChatHistoryDao::listRecent(uint64_t user_id, const std::string& session_id,
         po.agentStatus = res->getInt32(7);
         po.role = res->getString(8);
         po.content = res->getString(9);
-        po.tokenPrompt = res->getInt32(10);
-        po.tokenCompletion = res->getInt32(11);
-        po.extJson = res->getString(12);
+        po.toolName = res->getString(10);
+        po.toolArgsJson = res->getString(11);
+        po.toolResultJson = res->getString(12);
+        po.tokenPrompt = res->getInt32(13);
+        po.tokenCompletion = res->getInt32(14);
+        po.extJson = res->getString(15);
         out.push_back(po);
     }
     std::reverse(out.begin(), out.end());

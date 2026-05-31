@@ -16,21 +16,23 @@ AuthContext::ptr AuthFilter::check(flz::http::HttpRequest::ptr request, std::str
         return ctx;
     }
 
-    std::string token;
-    for (size_t i = 0; i < jwt_cfg.headerKeys.size(); ++i) {
-        std::string value = request->getHeader(jwt_cfg.headerKeys[i], "");
-        if (value.empty()) {
-            continue;
-        }
-        if (jwt_cfg.headerKeys[i] == "Authorization") {
-            const std::string prefix = "Bearer ";
-            if (value.find(prefix) == 0) {
-                value = value.substr(prefix.size());
+    std::string token = StringUtil::trim(request->getParam("token", ""));
+    if (token.empty()) {
+        for (size_t i = 0; i < jwt_cfg.headerKeys.size(); ++i) {
+            std::string value = request->getHeader(jwt_cfg.headerKeys[i], "");
+            if (value.empty()) {
+                continue;
             }
-        }
-        token = StringUtil::trim(value);
-        if (!token.empty()) {
-            break;
+            if (jwt_cfg.headerKeys[i] == "Authorization") {
+                const std::string prefix = "Bearer ";
+                if (value.find(prefix) == 0) {
+                    value = value.substr(prefix.size());
+                }
+            }
+            token = StringUtil::trim(value);
+            if (!token.empty()) {
+                break;
+            }
         }
     }
     if (token.empty()) {
@@ -38,20 +40,25 @@ AuthContext::ptr AuthFilter::check(flz::http::HttpRequest::ptr request, std::str
         return nullptr;
     }
 
-    Json::Value payload;
-    if (!JwtHelper::decode(token, jwt_cfg.secret, payload)) {
-        err_msg = "invalid token";
-        return nullptr;
-    }
-    if (!JwtHelper::validateRegisteredClaims(payload, jwt_cfg.issuer, jwt_cfg.clockSkewSeconds)) {
-        err_msg = "token expired or claims invalid";
+    JwtClaims claims;
+    if (!JwtHelper::verify(token, jwt_cfg.secret, jwt_cfg.issuer, jwt_cfg.clockSkewSeconds, claims,
+                           err_msg)) {
         return nullptr;
     }
 
     ctx->anonymous = false;
-    ctx->userId = payload.get("user_id", 0).asUInt64();
-    ctx->role = payload.get("role", "user").asString();
-    ctx->jti = payload.get("jti", "").asString();
+    ctx->userId = claims.userId;
+    ctx->deviceId = claims.deviceId;
+    ctx->iat = claims.iat;
+    ctx->exp = claims.exp;
+    if (claims.rawPayload.isMember("role")) {
+        ctx->role = claims.rawPayload["role"].asString();
+    } else {
+        ctx->role = "user";
+    }
+    if (claims.rawPayload.isMember("jti")) {
+        ctx->jti = claims.rawPayload["jti"].asString();
+    }
     return ctx;
 }
 

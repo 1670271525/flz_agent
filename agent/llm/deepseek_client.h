@@ -11,11 +11,19 @@
 
 #include "agent/llm/i_llm_client.h"
 
+#include <string>
+
 namespace agent {
 
 class DeepseekClient : public ILlmClient {
 public:
-    int streamChat(const std::vector<LlmMessage>& messages, const DeltaCallback& on_delta) override;
+    explicit DeepseekClient(const std::string& provider_name);
+    int streamChat(const std::vector<LlmMessage>& messages,
+                   const DeltaCallback& on_delta,
+                   Json::Value* out_result = nullptr) override;
+
+private:
+    std::string m_providerName;
 };
 
 } // namespace agent

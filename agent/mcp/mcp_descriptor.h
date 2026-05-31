@@ -17,6 +17,9 @@ namespace agent {
 
 struct McpToolDescriptor {
     std::string serviceName;
+    std::string transport;
+    std::string endpoint;
+    int timeoutMs = 5000;
     std::string name;
     std::string description;
     Json::Value parameters;

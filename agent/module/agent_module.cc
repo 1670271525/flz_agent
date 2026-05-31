@@ -2,7 +2,6 @@
 
 #include "agent/config/config_loader.h"
 #include "agent/http/health_servlet.h"
-#include "agent/http/login_servlet.h"
 #include "agent/http/sse_servlet.h"
 #include "agent/workflow/chat_workflow.h"
 #include "agent/workflow/code_workflow.h"
@@ -50,7 +49,6 @@ bool AgentModule::onServerReady() {
             continue;
         }
         flz::http::ServletDispatch::ptr dispatch = http_server->getServletDispatch();
-        dispatch->addServlet("/v1/auth/login", std::make_shared<LoginServlet>());
         dispatch->addServlet("/v1/chat/sse", std::make_shared<SseServlet>());
         dispatch->addServlet("/v1/health", std::make_shared<HealthServlet>());
     }

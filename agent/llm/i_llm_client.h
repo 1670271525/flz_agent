@@ -12,6 +12,7 @@
 #include "agent/llm/llm_message.h"
 
 #include <functional>
+#include <json/json.h>
 #include <memory>
 #include <vector>
 
@@ -22,7 +23,9 @@ public:
     typedef std::shared_ptr<ILlmClient> ptr;
     typedef std::function<bool(const std::string& delta)> DeltaCallback;
     virtual ~ILlmClient() {}
-    virtual int streamChat(const std::vector<LlmMessage>& messages, const DeltaCallback& on_delta) = 0;
+    virtual int streamChat(const std::vector<LlmMessage>& messages,
+                           const DeltaCallback& on_delta,
+                           Json::Value* out_result = nullptr) = 0;
 };
 
 } // namespace agent

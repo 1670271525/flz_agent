@@ -19,8 +19,8 @@ namespace agent {
 
 class PromptBuilder {
 public:
-    static std::vector<LlmMessage> build(const std::vector<ChatMessagePo>& history,
-                                         const std::string& user_msg,
+    static std::vector<LlmMessage> build(const std::vector<ChatMessagePo>& messages,
+                                         const std::string& agent_type,
                                          const std::string& tool_schema_json);
 };
 

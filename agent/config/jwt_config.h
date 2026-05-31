@@ -20,10 +20,10 @@ struct JwtConfigData {
     bool enabled = true;
     std::string algorithm = "HS256";
     std::string secret;
-    std::string issuer = "flz_agent";
+    std::string issuer = "flz_chat_business";
     int ttlSeconds = 7200;
     int refreshTtlSeconds = 1209600;
-    int clockSkewSeconds = 30;
+    int clockSkewSeconds = 60;
     std::vector<std::string> headerKeys;
 
     bool operator==(const JwtConfigData& other) const {

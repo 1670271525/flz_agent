@@ -1,5 +1,7 @@
 #include "agent/config/jwt_config.h"
 
+#include "agent/util/env_util.h"
+
 #include <sstream>
 #include <yaml-cpp/yaml.h>
 
@@ -21,11 +23,11 @@ agent::JwtConfigData LexicalCast<std::string, agent::JwtConfigData>::operator()(
     agent::JwtConfigData out;
     out.enabled = n["enabled"].as<bool>(true);
     out.algorithm = n["algorithm"].as<std::string>("HS256");
-    out.secret = n["secret"].as<std::string>("");
-    out.issuer = n["issuer"].as<std::string>("flz_agent");
+    out.secret = agent::EnvUtil::expand(n["secret"].as<std::string>(""));
+    out.issuer = n["issuer"].as<std::string>("flz_chat_business");
     out.ttlSeconds = n["ttl_seconds"].as<int>(7200);
     out.refreshTtlSeconds = n["refresh_ttl_seconds"].as<int>(1209600);
-    out.clockSkewSeconds = n["clock_skew_seconds"].as<int>(30);
+    out.clockSkewSeconds = n["clock_skew_seconds"].as<int>(60);
     if (n["header_keys"] && n["header_keys"].IsSequence()) {
         out.headerKeys = n["header_keys"].as<std::vector<std::string> >();
     } else {

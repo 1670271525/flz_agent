@@ -1,5 +1,7 @@
 #include "agent/config/llm_config.h"
 
+#include "agent/util/env_util.h"
+
 #include <sstream>
 #include <yaml-cpp/yaml.h>
 
@@ -34,7 +36,7 @@ agent::LlmProviderConfig LexicalCast<std::string, agent::LlmProviderConfig>::ope
     agent::LlmProviderConfig out;
     out.baseUrl = n["base_url"].as<std::string>("");
     out.ssePath = n["sse_path"].as<std::string>("");
-    out.apiKey = n["api_key"].as<std::string>("");
+    out.apiKey = agent::EnvUtil::expand(n["api_key"].as<std::string>(""));
     out.modelId = n["model_id"].as<std::string>("");
     out.timeoutMs = n["timeout_ms"].as<uint64_t>(60000);
     out.maxRetry = n["max_retry"].as<int>(1);

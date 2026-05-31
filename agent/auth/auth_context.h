@@ -24,8 +24,11 @@ public:
     typedef std::shared_ptr<AuthContext> ptr;
 
     uint64_t userId = 0;
+    std::string deviceId;
     std::string role = "guest";
     std::string jti;
+    int64_t iat = 0;
+    int64_t exp = 0;
     bool anonymous = true;
 };
 
